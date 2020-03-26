@@ -29,8 +29,8 @@ locale.use(lang);
 Vue.component('el-select',Select);
 Vue.component('el-option',Option);
 Vue.component('el-date-picker',DatePicker);
-Vue.component('el-tooltip',Tooltip);
-Vue.component('el-cascader',Cascader);
+Vue.component('el-tooltip', Tooltip);
+Vue.component('el-cascader', Cascader);
 Vue.use(locale);
 
 
@@ -59,13 +59,13 @@ axios.get(`/api/sysdate`).then(data => {
 
 });
 axios.get(`/api/block/blockinfo/1`).then(data => {
-  if(data.status === 200){
-    return data.data
-  }
+    if (data.status === 200) {
+        return data.data
+    }
 }).then(blockinfo => {
-  let firstBlockTime = new Date(blockinfo.timestamp.split('T')[0]).getTime();
+    let firstBlockTime = new Date(blockinfo.timestamp.split('T')[0]).getTime();
 
-  sessionStorage.setItem('firstBlockTime',Tools.formatDateYearToDate(firstBlockTime).replace(/\//g,'-'))
+    sessionStorage.setItem('firstBlockTime', Tools.formatDateYearToDate(firstBlockTime).replace(/\//g, '-'))
 });
 
 sessionStorage.setItem("Show_faucet",JSON.stringify(0));

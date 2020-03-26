@@ -358,10 +358,10 @@ export default class formatMsgsAndTags {
                 message[Constant.TRANSACTIONMESSAGENAME.TO].unshift(dataTx.tags.delegator);
                 message[Constant.TRANSACTIONMESSAGENAME.ENDTIME].unshift(Tools.format2UTC(dataTx.tags['end-time']))
             }
-            if(dataTx.msgs){
-                if(dataTx.msgs && Array.isArray(dataTx.msgs)&& dataTx.msgs !== null){
-                    dataTx.msgs.forEach( item => {
-                        if(item.msg){
+            if (dataTx.msgs) {
+                if (dataTx.msgs && Array.isArray(dataTx.msgs) && dataTx.msgs !== null) {
+                    dataTx.msgs.forEach(item => {
+                        if (item.msg) {
                             message[Constant.TRANSACTIONMESSAGENAME.SHARES].unshift(`${Tools.numberMoveDecimal(item.msg.shares_amount)} SHARES`)
                         }
                     })
@@ -430,20 +430,20 @@ export default class formatMsgsAndTags {
         message[Constant.TRANSACTIONMESSAGENAME.TO] = [];
         message[Constant.TRANSACTIONMESSAGENAME.TXTYPE].unshift(txType);
         if(dataTx.status === 'success'){
-            let formAddressArray = [],toAddressArray=[];
-            if(dataTx.tags){
-                for(let item in dataTx.tags){
-                    if(item.startsWith('withdraw-reward-from-validator')){
+            let formAddressArray = [], toAddressArray = [];
+            if (dataTx.tags) {
+                for (let item in dataTx.tags) {
+                    if (item.startsWith('withdraw-reward-from-validator')) {
                         formAddressArray.push(item.split('-')[item.split('-').length - 1])
                     }
-                    if(item === 'withdraw-address'){
+                    if (item === 'withdraw-address') {
                         toAddressArray.push(dataTx.tags[item])
                     }
                 }
             }
             message[Constant.TRANSACTIONMESSAGENAME.FROM] = formAddressArray.length > 0 ? formAddressArray : '-';
-            if(dataTx.monikers){
-                message[Constant.TRANSACTIONMESSAGENAME.FROM] = message[Constant.TRANSACTIONMESSAGENAME.FROM].map( item => {
+            if (dataTx.monikers) {
+                message[Constant.TRANSACTIONMESSAGENAME.FROM] = message[Constant.TRANSACTIONMESSAGENAME.FROM].map(item => {
                     return {
                         address: item,
                         moniker: dataTx.monikers[item]
@@ -479,37 +479,37 @@ export default class formatMsgsAndTags {
         message[Constant.TRANSACTIONMESSAGENAME.AMOUNT] = [];
         message[Constant.TRANSACTIONMESSAGENAME.TO] = [];
         message[Constant.TRANSACTIONMESSAGENAME.TXTYPE].unshift(txType);
-        let formAddressArray = [],toAddressArray=[];
-        if(dataTx.status === 'success'){
-            if(dataTx.tags){
-                for(let item in dataTx.tags){
-                    if(item.startsWith('withdraw-reward-from-validator')){
+        let formAddressArray = [], toAddressArray = [];
+        if (dataTx.status === 'success') {
+            if (dataTx.tags) {
+                for (let item in dataTx.tags) {
+                    if (item.startsWith('withdraw-reward-from-validator')) {
                         formAddressArray.push(item.split('-')[item.split('-').length - 1])
                     }
-                    if(item === 'withdraw-address'){
+                    if (item === 'withdraw-address') {
                         toAddressArray.push(dataTx.tags[item])
                     }
                 }
             }
-        }else {
-            if(dataTx.msgs){
-                dataTx.msgs.forEach( item => {
-                    if(item.msg){
+        } else {
+            if (dataTx.msgs) {
+                dataTx.msgs.forEach(item => {
+                    if (item.msg) {
                         formAddressArray.unshift(item.msg.validator_addr ? item.msg.validator_addr : '--')
                     }
                 })
             }
         }
         message[Constant.TRANSACTIONMESSAGENAME.FROM] = formAddressArray.length > 0 ? formAddressArray : '-';
-        if(dataTx.monikers){
-            if(message[Constant.TRANSACTIONMESSAGENAME.FROM] !== '-'){
-                message[Constant.TRANSACTIONMESSAGENAME.FROM] = message[Constant.TRANSACTIONMESSAGENAME.FROM].map( item => {
-                    if(dataTx.monikers[item]){
+        if (dataTx.monikers) {
+            if (message[Constant.TRANSACTIONMESSAGENAME.FROM] !== '-') {
+                message[Constant.TRANSACTIONMESSAGENAME.FROM] = message[Constant.TRANSACTIONMESSAGENAME.FROM].map(item => {
+                    if (dataTx.monikers[item]) {
                         return {
                             address: item,
                             moniker: dataTx.monikers[item]
                         }
-                    }else {
+                    } else {
                         return {
                             address: item,
                             moniker: dataTx.monikers[item],
@@ -942,18 +942,18 @@ export default class formatMsgsAndTags {
         message[Constant.TRANSACTIONMESSAGENAME.TO] = [];
         message[Constant.TRANSACTIONMESSAGENAME.SECRET] = [];
         message[Constant.TRANSACTIONMESSAGENAME.TXTYPE].unshift(txType);
-        if(dataTx.status === 'success'){
-            if(dataTx.tags){
+        if (dataTx.status === 'success') {
+            if (dataTx.tags) {
                 message[Constant.TRANSACTIONMESSAGENAME.FROM].unshift(dataTx.tags.sender);
                 message[Constant.TRANSACTIONMESSAGENAME.TO].unshift(dataTx.tags.receiver);
                 message[Constant.TRANSACTIONMESSAGENAME.HASHLOCK].unshift(dataTx.tags['hash-lock']);
                 message[Constant.TRANSACTIONMESSAGENAME.SECRET].unshift(dataTx.tags.secret);
             }
-        }else {
-            if(dataTx.msgs && Array.isArray(dataTx.msgs) && dataTx.msgs !== null){
-                dataTx.msgs.forEach( item => {
-                    if(item.type === txType){
-                        if(item.msg){
+        } else {
+            if (dataTx.msgs && Array.isArray(dataTx.msgs) && dataTx.msgs !== null) {
+                dataTx.msgs.forEach(item => {
+                    if (item.type === txType) {
+                        if (item.msg) {
                             message[Constant.TRANSACTIONMESSAGENAME.HASHLOCK].unshift(item.msg['hash_lock']);
                             message[Constant.TRANSACTIONMESSAGENAME.FROM].unshift('-');
                             message[Constant.TRANSACTIONMESSAGENAME.TO].unshift('-');
@@ -1003,26 +1003,26 @@ export default class formatMsgsAndTags {
         message[Constant.TRANSACTIONMESSAGENAME.TO] = [];
         message[Constant.TRANSACTIONMESSAGENAME.HASHLOCK] = [];
         if(dataTx.msgs && Array.isArray(dataTx.msgs) && dataTx.msgs !== null){
-            if(dataTx.status === 'success'){
+            if (dataTx.status === 'success') {
                 message[Constant.TRANSACTIONMESSAGENAME.TXTYPE].unshift(txType);
-                if(dataTx.tags){
+                if (dataTx.tags) {
                     message[Constant.TRANSACTIONMESSAGENAME.HASHLOCK].unshift(dataTx.tags['hash-lock']);
                     message[Constant.TRANSACTIONMESSAGENAME.TO].unshift(dataTx.tags.sender);
                 }
-            }else {
-                if(dataTx.msgs){
-                    dataTx.msgs.forEach( item => {
-                        if(item.type === txType){
+            } else {
+                if (dataTx.msgs) {
+                    dataTx.msgs.forEach(item => {
+                        if (item.type === txType) {
                             message[Constant.TRANSACTIONMESSAGENAME.TXTYPE].unshift(item.type);
-                            if(item.msg){
+                            if (item.msg) {
                                 message[Constant.TRANSACTIONMESSAGENAME.HASHLOCK].unshift(item.msg['hash_lock']);
                             }
                         }
                     })
                 }
-                if(dataTx.tags && dataTx.tags.sender){
+                if (dataTx.tags && dataTx.tags.sender) {
                     message[Constant.TRANSACTIONMESSAGENAME.TO].unshift(dataTx.tags.sender ? dataTx.tags.sender : '-');
-                }else {
+                } else {
                     message[Constant.TRANSACTIONMESSAGENAME.TO].unshift('-');
                 }
             }
