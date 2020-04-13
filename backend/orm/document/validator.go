@@ -92,14 +92,16 @@ type Validator struct {
 	Description     Description   `bson:"description" json:"description"`
 	BondHeight      string        `bson:"bond_height" json:"bond_height"`
 	UnbondingHeight string        `bson:"unbonding_height" json:"unbonding_height"`
-	UnbondingTime   time.Time     `bson:"unbonding_time" json:"unbonding_time"`
-	Commission      Commission    `bson:"commission" json:"commission"`
-	Uptime          float32       `bson:"uptime" json:"uptime"`
-	SelfBond        string        `bson:"self_bond" json:"self_bond"`
-	DelegatorNum    int           `bson:"delegator_num" json:"delegator_num"`
-	ProposerAddr    string        `bson:"proposer_addr" json:"proposer_addr"`
-	VotingPower     int64         `bson:"voting_power" json:"voting_power"`
-	Icons           string        `bson:"icons" json:"icons"`
+	UnbondingTime time.Time  `bson:"unbonding_time" json:"unbonding_time"`
+	Commission    Commission `bson:"commission" json:"commission"`
+	Uptime        float32    `bson:"uptime" json:"uptime"`
+	SelfBond      string     `bson:"self_bond" json:"self_bond"`
+	DelegatorNum  int        `bson:"delegator_num" json:"delegator_num"`
+	ProposerAddr  string     `bson:"proposer_addr" json:"proposer_addr"`
+	VotingPower   int64      `bson:"voting_power" json:"voting_power"`
+	Icons         string     `bson:"icons" json:"icons"`
+	CreateTime    int64      `bson:"create_time" json:"create_time"`
+	UpdateTime    int64      `bson:"update_time" json:"update_time"`
 }
 
 func (v Validator) String() string {
@@ -567,6 +569,27 @@ func (_ Validator) UpdateByPk(validator Validator) error {
 
 	c := db.C(CollectionNmValidator)
 	return c.Update(validator.PkKvPair(), validator)
+}
+
+// save document b
+func (_ Validator) Save(validator Validator) error {
+	validator.ID = bson.NewObjectId()
+	validator.CreateTime = time.Now().Unix()
+	validator.UpdateTime = time.Now().Unix()
+
+	db := orm.GetDatabase()
+	defer db.Session.Close()
+
+	c := db.C(CollectionNmValidator)
+	return c.Insert(validator)
+}
+
+func (_ Validator) Delete(validator Validator) error {
+	db := orm.GetDatabase()
+	defer db.Session.Close()
+
+	c := db.C(CollectionNmValidator)
+	return c.Remove(validator.PkKvPair())
 }
 
 func (_ Validator) QueryValidatorDescription() map[string]Description {

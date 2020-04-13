@@ -17,6 +17,8 @@ import (
 
 type ValidatorService struct {
 	BaseService
+	validatorModel document.Validator
+	commonTxModel  document.CommonTx
 }
 
 func (service *ValidatorService) GetModule() Module {
@@ -28,7 +30,7 @@ func (service *ValidatorService) GetValidators(typ, origin string, page, size in
 		var result []lcd.ValidatorVo
 		var blackList = service.QueryBlackList()
 
-		total, validatorList, err := document.Validator{}.GetValidatorListByPage(typ, page, size, true, istotal)
+		total, validatorList, err := service.validatorModel.GetValidatorListByPage(typ, page, size, true, istotal)
 		if err != nil || total <= 0 {
 			if err != nil {
 				logger.Error("GetValidatorListByPage have error", logger.String("error", err.Error()))
@@ -106,7 +108,7 @@ func (service *ValidatorService) GetVoteTxsByValidatorAddr(validatorAddr string,
 func (service *ValidatorService) GetDepositedTxByValidatorAddr(validatorAddr string, page, size int, istotal bool) vo.ValidatorDepositTxPage {
 
 	validatorAcc := utils.Convert(conf.Get().Hub.Prefix.AccAddr, validatorAddr)
-	total, txs, err := document.CommonTx{}.QueryDepositedProposalTxByValidatorWithSubmitOrDepositType(validatorAcc, page, size, istotal)
+	total, txs, err := service.commonTxModel.QueryDepositedProposalTxByValidatorWithSubmitOrDepositType(validatorAcc, page, size, istotal)
 
 	if err != nil {
 		if err.Error() != "not found" {
@@ -120,7 +122,7 @@ func (service *ValidatorService) GetDepositedTxByValidatorAddr(validatorAddr str
 		proposalIds = append(proposalIds, v.ProposalId)
 	}
 
-	proposerByIdMap, err := document.CommonTx{}.QueryProposalTxFromById(proposalIds)
+	proposerByIdMap, err := service.commonTxModel.QueryProposalTxFromById(proposalIds)
 
 	if err != nil {
 		logger.Error("QueryProposalTxFromById", logger.String("err", err.Error()))
@@ -245,7 +247,7 @@ func (service *ValidatorService) GetDelegationsFromLcd(valAddr string, page, siz
 
 	addrArr := []string{valAddr}
 
-	tokenShareRatioByValidatorAddr, err := document.Validator{}.QueryTokensAndShareRatioByValidatorAddrs(addrArr)
+	tokenShareRatioByValidatorAddr, err := service.validatorModel.QueryTokensAndShareRatioByValidatorAddrs(addrArr)
 	if err != nil {
 		logger.Debug("QueryTokensAndShareRatioByValidatorAddrs", logger.String("err", err.Error()))
 	}
@@ -516,7 +518,7 @@ func (service *ValidatorService) GetCommisstionInfo() vo.CommissionInfoResp {
 
 func (service *ValidatorService) UpdateValidatorIcons() error {
 
-	validatorsDocArr, err := document.Validator{}.GetAllValidator()
+	validatorsDocArr, err := service.validatorModel.GetAllValidator()
 	if err != nil {
 		return err
 	}
@@ -548,7 +550,7 @@ func (service *ValidatorService) UpdateValidatorIcons() error {
 
 func (service *ValidatorService) GetValidatorDetail(validatorAddr string) vo.ValidatorForDetail {
 
-	validatorAsDoc, err := document.Validator{}.QueryValidatorDetailByOperatorAddr(validatorAddr)
+	validatorAsDoc, err := service.validatorModel.QueryValidatorDetailByOperatorAddr(validatorAddr)
 	if err != nil {
 		logger.Error("QueryValidatorDetailByOperatorAddr", logger.String("validator", validatorAddr), logger.String("err", err.Error()))
 		return vo.ValidatorForDetail{}
@@ -601,7 +603,7 @@ func (service *ValidatorService) GetValidatorDetail(validatorAddr string) vo.Val
 		}
 	}
 
-	totalVotingPower, err := document.Validator{}.QueryTotalActiveValidatorVotingPower()
+	totalVotingPower, err := service.validatorModel.QueryTotalActiveValidatorVotingPower()
 
 	if err != nil {
 		logger.Error("QueryTotalActiveValidatorVotingPower", logger.String("err", err.Error()))
@@ -649,7 +651,7 @@ func (service *ValidatorService) GetValidatorDetail(validatorAddr string) vo.Val
 
 func (service *ValidatorService) QueryCandidatesTopN() vo.ValDetailVo {
 
-	validatorsList, power, upTimeMap, err := document.Validator{}.GetCandidatesTopN()
+	validatorsList, power, upTimeMap, err := service.validatorModel.GetCandidatesTopN()
 
 	if err != nil {
 		logger.Error("GetCandidatesTopN have error", logger.String("error", err.Error()))
@@ -714,7 +716,7 @@ func (service *ValidatorService) QueryValidator(address string) vo.CandidatesInf
 		Validator: val,
 	}
 
-	count, err := document.Validator{}.QueryPowerWithBonded()
+	count, err := service.validatorModel.QueryPowerWithBonded()
 
 	if err != nil {
 		logger.Error("query candidate power with bonded ", logger.String("err", err.Error()))
@@ -776,7 +778,7 @@ func ComputeBondStake(tokens, shares, selfBond string) string {
 
 func (service *ValidatorService) QueryCandidateStatus(address string) (resp vo.ValStatus) {
 
-	preCommitCount, uptime, err := document.Validator{}.QueryCandidateStatus(address)
+	preCommitCount, uptime, err := service.validatorModel.QueryCandidateStatus(address)
 
 	if err != nil {
 		logger.Error("query candidate status", logger.String("err", err.Error()))
@@ -881,58 +883,129 @@ func (service *ValidatorService) UpdateDescription(vs []document.Validator) {
 //	}
 //}
 
-func (service *ValidatorService) UpdateValidators(vs []document.Validator) error {
+//func (service *ValidatorService) UpdateValidators(vs []document.Validator) error {
+//	var vMap = make(map[string]document.Validator)
+//	for _, v := range vs {
+//		vMap[v.OperatorAddress] = v
+//	}
+//
+//	var txs []txn.Op
+//	dstValidators := buildValidators()
+//	service.UpdateDescription(dstValidators)
+//	for _, v := range dstValidators {
+//		if v1, ok := vMap[v.OperatorAddress]; ok {
+//			v.ID = v1.ID
+//			v.Icons = v1.Icons
+//			if isDiffValidator(v1, v) {
+//				// set staticInfo, see detail: buildValidatorStaticInfo
+//				v.Uptime = v1.Uptime
+//				v.SelfBond = v1.SelfBond
+//				v.DelegatorNum = v1.DelegatorNum
+//				txs = append(txs, txn.Op{
+//					C:  document.CollectionNmValidator,
+//					Id: v.ID,
+//					Update: bson.M{
+//						"$set": v,
+//					},
+//				})
+//			}
+//			delete(vMap, v.OperatorAddress)
+//		} else {
+//			v.ID = bson.NewObjectId()
+//			txs = append(txs, txn.Op{
+//				C:      document.CollectionNmValidator,
+//				Id:     bson.NewObjectId(),
+//				Insert: v,
+//			})
+//		}
+//	}
+//	if len(vMap) > 0 {
+//		for addr := range vMap {
+//			v := vMap[addr]
+//			txs = append(txs, txn.Op{
+//				C:      document.CollectionNmValidator,
+//				Id:     v.ID,
+//				Remove: true,
+//			})
+//		}
+//	}
+//	return document.Validator{}.Batch(txs)
+//}
+
+func (service *ValidatorService) UpdateValidators() error {
+	validators, err := service.validatorModel.GetAllValidator()
+	if err != nil {
+		return err
+	}
 	var vMap = make(map[string]document.Validator)
-	for _, v := range vs {
+	for _, v := range validators {
 		vMap[v.OperatorAddress] = v
 	}
 
 	var txs []txn.Op
 	dstValidators := buildValidators()
 	service.UpdateDescription(dstValidators)
-	for _, v := range dstValidators {
-		if v1, ok := vMap[v.OperatorAddress]; ok {
-			v.ID = v1.ID
-			v.Icons = v1.Icons
-			if isDiffValidator(v1, v) {
-				// set staticInfo, see detail: buildValidatorStaticInfo
-				v.Uptime = v1.Uptime
-				v.SelfBond = v1.SelfBond
-				v.DelegatorNum = v1.DelegatorNum
-				txs = append(txs, txn.Op{
-					C:  document.CollectionNmValidator,
-					Id: v.ID,
-					Update: bson.M{
-						"$set": v,
-					},
-				})
-			}
-			delete(vMap, v.OperatorAddress)
+	for i, v := range dstValidators {
+		if srcval, ok := vMap[v.OperatorAddress]; ok {
+			service.updateValidator()
 		} else {
-			v.ID = bson.NewObjectId()
-			txs = append(txs, txn.Op{
-				C:      document.CollectionNmValidator,
-				Id:     bson.NewObjectId(),
-				Insert: v,
-			})
+			service.saveValidator(dstValidators[i])
 		}
+		//if v1, ok := vMap[v.OperatorAddress]; ok {
+		//	v.ID = v1.ID
+		//	v.Icons = v1.Icons
+		//	if isDiffValidator(v1, v) {
+		//		// set staticInfo, see detail: buildValidatorStaticInfo
+		//		v.Uptime = v1.Uptime
+		//		v.SelfBond = v1.SelfBond
+		//		v.DelegatorNum = v1.DelegatorNum
+		//		txs = append(txs, txn.Op{
+		//			C:  document.CollectionNmValidator,
+		//			Id: v.ID,
+		//			Update: bson.M{
+		//				"$set": v,
+		//			},
+		//		})
+		//	}
+		//	delete(vMap, v.OperatorAddress)
+		//} else {
+		//	v.ID = bson.NewObjectId()
+		//	txs = append(txs, txn.Op{
+		//		C:      document.CollectionNmValidator,
+		//		Id:     bson.NewObjectId(),
+		//		Insert: v,
+		//	})
+		//}
 	}
 	if len(vMap) > 0 {
 		for addr := range vMap {
 			v := vMap[addr]
-			txs = append(txs, txn.Op{
-				C:      document.CollectionNmValidator,
-				Id:     v.ID,
-				Remove: true,
-			})
+			if err := service.validatorModel.Delete(v); err != nil {
+				logger.Warn("Validator Delete failed",
+					logger.String("operator_address", v.OperatorAddress),
+					logger.String("err", err.Error()))
+			}
 		}
 	}
 	return document.Validator{}.Batch(txs)
 }
 
+func (service *ValidatorService) updateValidator(srcval, dstval document.Validator) error {
+
+}
+func (service *ValidatorService) saveValidator(validator document.Validator) error {
+	if err := service.validatorModel.Save(validator); err != nil {
+		logger.Error("Save Validator have error",
+			logger.String("operator_address", validator.OperatorAddress),
+			logger.String("err", err.Error()))
+		return err
+	}
+	return nil
+}
+
 func (service *ValidatorService) UpdateValidatorStaticInfo() error {
-	var validatorModel document.Validator
-	validators, err := validatorModel.GetAllValidator()
+	//var validatorModel document.Validator
+	validators, err := service.validatorModel.GetAllValidator()
 	if err != nil {
 		return err
 	}
@@ -946,7 +1019,7 @@ func (service *ValidatorService) UpdateValidatorStaticInfo() error {
 
 	for _, v := range updatedValidators {
 		if !isEqual(validatorMap[v.OperatorAddress], v) {
-			if err := validatorModel.UpdateByPk(v); err != nil {
+			if err := service.validatorModel.UpdateByPk(v); err != nil {
 				logger.Error("update validator static data fail", logger.String("err", err.Error()),
 					logger.String("validator", string(utils.MarshalJsonIgnoreErr(v))))
 				continue
@@ -959,12 +1032,12 @@ func (service *ValidatorService) UpdateValidatorStaticInfo() error {
 
 func (service *ValidatorService) QueryValidatorMonikerAndValidatorAddrByHashAddr(addr string) (document.Validator, error) {
 
-	return document.Validator{}.QueryMonikerAndValidatorAddrByHashAddr(addr)
+	return service.validatorModel.QueryMonikerAndValidatorAddrByHashAddr(addr)
 }
 
 func (service *ValidatorService) QueryValidatorByConAddr(address string) document.Validator {
 
-	validator, err := document.Validator{}.QueryValidatorByConsensusAddr(address)
+	validator, err := service.validatorModel.QueryValidatorByConsensusAddr(address)
 
 	if err != nil {
 		logger.Error("not found validator by conAddr", logger.String("conAddr", address))

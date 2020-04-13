@@ -10,7 +10,6 @@ import (
 	"encoding/json"
 	"github.com/irisnet/explorer/backend/logger"
 	"github.com/irisnet/explorer/backend/utils"
-	"github.com/irisnet/explorer/backend/orm/document"
 )
 
 func TestGetDelegationsFromLcd(t *testing.T) {
@@ -94,9 +93,9 @@ func TestValidatorService_UpdateValidatorStaticData(t *testing.T) {
 }
 func TestValidatorService_UpdateValidators(t *testing.T) {
 
-	validators, _ := document.Validator{}.GetAllValidator()
+	//validators, _ := document.Validator{}.GetAllValidator()
 	//fmt.Println(validators)
-	if err := validatorService.UpdateValidators(validators); err != nil {
+	if err := validatorService.UpdateValidators(); err != nil {
 		t.Fatal(err)
 	} else {
 		t.Log("success")
