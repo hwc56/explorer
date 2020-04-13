@@ -935,6 +935,7 @@ func (service *ValidatorService) UpdateDescription(vs []document.Validator) {
 func (service *ValidatorService) HandleValidators() error {
 	validators, err := service.validatorModel.GetAllValidator()
 	if err != nil {
+		logger.Error("get validators from db is failed", logger.String("err", err.Error()))
 		return err
 	}
 	var vMapData = make(map[string]document.Validator, len(validators))
