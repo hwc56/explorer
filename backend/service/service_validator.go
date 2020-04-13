@@ -932,54 +932,57 @@ func (service *ValidatorService) UpdateDescription(vs []document.Validator) {
 //	return document.Validator{}.Batch(txs)
 //}
 
-func (service *ValidatorService) UpdateValidators() error {
+func (service *ValidatorService) HandleValidators() error {
 	validators, err := service.validatorModel.GetAllValidator()
 	if err != nil {
 		return err
 	}
-	var vMap = make(map[string]document.Validator)
+	var vMapData = make(map[string]document.Validator, len(validators))
 	for _, v := range validators {
-		vMap[v.OperatorAddress] = v
+		vMapData[v.OperatorAddress] = v
 	}
 
-	var txs []txn.Op
-	dstValidators := buildValidators()
-	service.UpdateDescription(dstValidators)
-	for i, v := range dstValidators {
-		if srcval, ok := vMap[v.OperatorAddress]; ok {
-			service.updateValidator()
-		} else {
-			service.saveValidator(dstValidators[i])
-		}
-		//if v1, ok := vMap[v.OperatorAddress]; ok {
-		//	v.ID = v1.ID
-		//	v.Icons = v1.Icons
-		//	if isDiffValidator(v1, v) {
-		//		// set staticInfo, see detail: buildValidatorStaticInfo
-		//		v.Uptime = v1.Uptime
-		//		v.SelfBond = v1.SelfBond
-		//		v.DelegatorNum = v1.DelegatorNum
-		//		txs = append(txs, txn.Op{
-		//			C:  document.CollectionNmValidator,
-		//			Id: v.ID,
-		//			Update: bson.M{
-		//				"$set": v,
-		//			},
-		//		})
-		//	}
-		//	delete(vMap, v.OperatorAddress)
-		//} else {
-		//	v.ID = bson.NewObjectId()
-		//	txs = append(txs, txn.Op{
-		//		C:      document.CollectionNmValidator,
-		//		Id:     bson.NewObjectId(),
-		//		Insert: v,
-		//	})
-		//}
+	res := lcd.Validators(1, 100)
+	if res2 := lcd.Validators(2, 100); len(res2) > 0 {
+		res = append(res, res2...)
 	}
-	if len(vMap) > 0 {
-		for addr := range vMap {
-			v := vMap[addr]
+
+	CheckDiffer := func(des0 document.Description, des1 lcd.Description) (document.Description, bool) {
+		differ := des0.Moniker != des1.Moniker || des0.Website == des1.Website ||
+			des0.Identity != des1.Identity || des0.Details != des1.Details
+		if differ {
+			return loadDescription(des1), differ
+		}
+		return des0, differ
+	}
+
+	for _, v := range res {
+
+		if val, ok := ValidatorsDescriptionMap[v.OperatorAddress]; ok {
+			if dest, ok := CheckDiffer(val, v.Description); ok {
+				ValidatorsDescriptionMap[v.OperatorAddress] = dest
+			}
+		} else {
+			ValidatorsDescriptionMap[v.OperatorAddress] = loadDescription(v.Description)
+		}
+
+		validator, err := handleValidator(v)
+		if err != nil {
+			logger.Error("handle validator fail", logger.String("err", err.Error()))
+			continue
+		}
+		if srcval, ok := vMapData[v.OperatorAddress]; ok {
+			service.updateValidator(srcval, validator)
+			delete(vMapData, validator.OperatorAddress)
+		} else {
+			service.saveValidator(validator)
+		}
+
+	}
+
+	if len(vMapData) > 0 {
+		for addr := range vMapData {
+			v := vMapData[addr]
 			if err := service.validatorModel.Delete(v); err != nil {
 				logger.Warn("Validator Delete failed",
 					logger.String("operator_address", v.OperatorAddress),
@@ -987,11 +990,35 @@ func (service *ValidatorService) UpdateValidators() error {
 			}
 		}
 	}
-	return document.Validator{}.Batch(txs)
+	return nil
 }
 
-func (service *ValidatorService) updateValidator(srcval, dstval document.Validator) error {
-
+func (service *ValidatorService) updateValidator(src, dst document.Validator) error {
+	if !isDiffValidator(src, dst) {
+		return nil
+	}
+	src.ConsensusPubkey = dst.ConsensusPubkey
+	src.Jailed = dst.Jailed
+	src.Status = dst.Status
+	src.Tokens = dst.Tokens
+	src.DelegatorShares = dst.DelegatorShares
+	src.BondHeight = dst.BondHeight
+	src.UnbondingHeight = dst.UnbondingHeight
+	src.UnbondingTime = dst.UnbondingTime
+	src.VotingPower = dst.VotingPower
+	src.ProposerAddr = dst.ProposerAddr
+	src.Description.Moniker = dst.Description.Moniker
+	src.Description.Identity = dst.Description.Identity
+	src.Description.Website = dst.Description.Website
+	src.Description.Details = dst.Description.Details
+	src.Commission.Rate = dst.Commission.Rate
+	src.Commission.MaxRate = dst.Commission.MaxRate
+	src.Commission.MaxChangeRate = dst.Commission.MaxChangeRate
+	src.Commission.UpdateTime = dst.Commission.UpdateTime
+	if err := service.validatorModel.UpdateByPk(src); err != nil {
+		return err
+	}
+	return nil
 }
 func (service *ValidatorService) saveValidator(validator document.Validator) error {
 	if err := service.validatorModel.Save(validator); err != nil {
@@ -1045,37 +1072,27 @@ func (service *ValidatorService) QueryValidatorByConAddr(address string) documen
 	return validator
 }
 
-func buildValidators() []document.Validator {
-
-	res := lcd.Validators(1, 100)
-	if res2 := lcd.Validators(2, 100); len(res2) > 0 {
-		res = append(res, res2...)
+func loadDescription(des lcd.Description) document.Description {
+	return document.Description{
+		Moniker:  des.Moniker,
+		Identity: des.Identity,
+		Website:  des.Website,
+		Details:  des.Details,
+	}
+}
+func handleValidator(v lcd.ValidatorVo) (document.Validator, error) {
+	var validator document.Validator
+	if err := utils.Copy(v, &validator); err != nil {
+		return validator, err
 	}
 
-	var result []document.Validator
-	var buildValidator = func(v lcd.ValidatorVo) (document.Validator, error) {
-		var validator document.Validator
-		if err := utils.Copy(v, &validator); err != nil {
-			return validator, err
-		}
-
-		votingPower, err := types.NewDecFromStr(v.Tokens)
-		if err == nil {
-			validator.VotingPower = votingPower.RoundInt64()
-		}
-		validator.ProposerAddr = utils.GenHexAddrFromPubKey(validator.ConsensusPubkey)
-
-		return validator, nil
+	votingPower, err := types.NewDecFromStr(v.Tokens)
+	if err == nil {
+		validator.VotingPower = votingPower.RoundInt64()
 	}
+	validator.ProposerAddr = utils.GenHexAddrFromPubKey(validator.ConsensusPubkey)
 
-	for _, v := range res {
-		if validator, err := buildValidator(v); err == nil {
-			result = append(result, validator)
-		} else {
-			logger.Error("build validator fail", logger.String("err", err.Error()))
-		}
-	}
-	return result
+	return validator, nil
 }
 
 // update validator static info

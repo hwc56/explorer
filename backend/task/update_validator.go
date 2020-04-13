@@ -25,14 +25,9 @@ func (task UpdateValidator) Start() {
 }
 
 func (task UpdateValidator) DoTask() error {
-	//validators, err := document.Validator{}.GetAllValidator()
-	//
-	//if err != nil {
-	//	return err
-	//}
 
 	validatorService := service.Get(service.Validator).(*service.ValidatorService)
-	err := validatorService.UpdateValidators()
+	err := validatorService.HandleValidators()
 
 	if err != nil {
 		return err

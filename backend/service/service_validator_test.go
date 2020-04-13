@@ -91,21 +91,19 @@ func TestValidatorService_UpdateValidatorStaticData(t *testing.T) {
 		t.Log("success")
 	}
 }
-func TestValidatorService_UpdateValidators(t *testing.T) {
+func TestValidatorService_HandleValidators(t *testing.T) {
 
-	//validators, _ := document.Validator{}.GetAllValidator()
-	//fmt.Println(validators)
-	if err := validatorService.UpdateValidators(); err != nil {
+	if err := validatorService.HandleValidators(); err != nil {
 		t.Fatal(err)
 	} else {
 		t.Log("success")
 	}
 }
 
-func TestBuildValidators(t *testing.T) {
-	res := buildValidators()
-	t.Log(string(utils.MarshalJsonIgnoreErr(res)))
-}
+//func TestBuildValidators(t *testing.T) {
+//	res := buildValidators()
+//	t.Log(string(utils.MarshalJsonIgnoreErr(res)))
+//}
 
 
 func TestValidatorService_GetValidatorDetail(t *testing.T) {
