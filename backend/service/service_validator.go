@@ -8,8 +8,6 @@ import (
 	"github.com/irisnet/explorer/backend/types"
 	"github.com/irisnet/explorer/backend/utils"
 	"github.com/irisnet/explorer/backend/vo"
-	"gopkg.in/mgo.v2/bson"
-	"gopkg.in/mgo.v2/txn"
 	"math/big"
 	"strconv"
 	"sort"
@@ -522,7 +520,7 @@ func (service *ValidatorService) UpdateValidatorIcons() error {
 	if err != nil {
 		return err
 	}
-	var txs []txn.Op
+	//var txs []txn.Op
 	for _, validator := range validatorsDocArr {
 		if identity := validator.Description.Identity; identity != "" {
 			urlicons, err := lcd.GetIconsByKey(identity)
@@ -530,22 +528,27 @@ func (service *ValidatorService) UpdateValidatorIcons() error {
 				logger.Error("GetIconsByKey have error", logger.String("error", err.Error()))
 				continue
 			}
-			//validator.Icons = urlicons
-			txs = append(txs, txn.Op{
-				C:  document.CollectionNmValidator,
-				Id: validator.ID,
-				Update: bson.M{
-					//"$set": validator,
-					"$set": bson.M{
-						"icons": urlicons,
-					},
-				},
-			})
-
+			validator.Icons = urlicons
+			//txs = append(txs, txn.Op{
+			//	C:  document.CollectionNmValidator,
+			//	Id: validator.ID,
+			//	Update: bson.M{
+			//		//"$set": validator,
+			//		"$set": bson.M{
+			//			"icons": urlicons,
+			//		},
+			//	},
+			//})
+			if err := service.validatorModel.UpdateByPk(validator); err != nil {
+				logger.Error("Update Validatoe Icons failed",
+					logger.String("operator_address", validator.OperatorAddress),
+					logger.String("err", err.Error()))
+			}
 		}
 
 	}
-	return document.Validator{}.Batch(txs)
+	//return document.Validator{}.Batch(txs)
+	return nil
 }
 
 func (service *ValidatorService) GetValidatorDetail(validatorAddr string) vo.ValidatorForDetail {
