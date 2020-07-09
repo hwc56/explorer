@@ -267,29 +267,29 @@ func (service *BlockService) QueryRecent() vo.BlockInfoVoRespond {
 	return result
 }
 
-func buildBlock(block document.Block) (result vo.BlockInfoVo) {
-	result.Height = block.Height
-	result.Hash = block.Hash
-	result.Time = block.Time.UTC()
-	result.NumTxs = block.NumTxs
-	var validators []vo.ValInfo
-	for _, v := range block.Validators {
-		validators = append(validators, vo.ValInfo{
-			Address:     v.Address,
-			VotingPower: v.VotingPower,
-		})
-	}
-	result.Validators = validators
-
-	var lastCommit []string
-	for _, v := range block.Block.LastCommit.Precommits {
-		lastCommit = append(lastCommit, v.ValidatorAddress)
-	}
-	result.LastCommit = lastCommit
-	result.TotalTxs = block.Meta.Header.TotalTxs
-	result.LastBlockHash = block.Block.LastCommit.BlockID.Hash
-	return result
-}
+//func buildBlock(block document.Block) (result vo.BlockInfoVo) {
+//	result.Height = block.Height
+//	result.Hash = block.Hash
+//	result.Time = block.Time.UTC()
+//	result.NumTxs = block.NumTxs
+//	var validators []vo.ValInfo
+//	for _, v := range block.Validators {
+//		validators = append(validators, vo.ValInfo{
+//			Address:     v.Address,
+//			VotingPower: v.VotingPower,
+//		})
+//	}
+//	result.Validators = validators
+//
+//	var lastCommit []string
+//	for _, v := range block.Block.LastCommit.Precommits {
+//		lastCommit = append(lastCommit, v.ValidatorAddress)
+//	}
+//	result.LastCommit = lastCommit
+//	result.TotalTxs = block.Meta.Header.TotalTxs
+//	result.LastBlockHash = block.Block.LastCommit.BlockID.Hash
+//	return result
+//}
 
 func (service *BlockService) QueryLatestHeight() (result vo.LatestHeightRespond) {
 	var block = lcd.BlockLatest()
