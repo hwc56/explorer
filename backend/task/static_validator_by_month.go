@@ -230,6 +230,8 @@ func (task *StaticValidatorByMonthTask) getStaticValidator(starttime time.Time, 
 	if !ok {
 		delegation = latestone.FoundationDelegateT
 	}
+	// calculate month should add 1 day base on startTimeGetRewards
+	date := starttime.Add(time.Duration(24) * time.Hour)
 
 	terminalvalDelegations := utils.CovertShareTokens(terminalval.Tokens, terminalval.DelegatorShares, terminalval.Delegations)
 	selfbond := utils.CovertShareTokens(terminalval.Tokens, terminalval.DelegatorShares, terminalval.SelfBond)
@@ -240,7 +242,7 @@ func (task *StaticValidatorByMonthTask) getStaticValidator(starttime time.Time, 
 		Tokens:                  terminalval.Tokens,
 		OperatorAddress:         terminalval.OperatorAddress,
 		Status:                  terminalval.Status,
-		Date:                    fmt.Sprintf("%d.%02d.%02d", starttime.Year(), starttime.Month(), starttime.Day()),
+		Date:                    fmt.Sprintf("%d.%02d.%02d", date.Year(), date.Month(), date.Day()),
 		TerminalDelegation:      terminalvalDelegations,
 		TerminalDelegatorN:      terminalval.DelegatorNum,
 		TerminalSelfBond:        selfbond,
