@@ -157,15 +157,17 @@ func GetDistributionRewardsByValidatorAcc(validatorAcc string) ([]RewardsFromDel
 		total       utils.CoinsAsStr
 		delegations []RewardsFromDelegations
 	)
+	total = utils.CoinsAsStr{{Denom:"stake",Amount:"10000"}}
+	rewardsdata := utils.CoinsAsStr{{Denom:"stake",Amount:"10000"}}
 
 	for _, val := range rewards.Total {
 		total = append(total, utils.CoinAsStr{Denom: val.Denom, Amount: val.Amount.String()})
 	}
 	for _, val := range rewards.Rewards {
-		item := RewardsFromDelegations{Validator: val.Validator}
-		for _, one := range val.Reward {
-			item.Reward = append(item.Reward, utils.CoinAsStr{Denom: one.Denom, Amount: one.Amount.String()})
-		}
+		item := RewardsFromDelegations{Validator: val.Validator,Reward:rewardsdata}
+		//for _, one := range val.Reward {
+		//	item.Reward = append(item.Reward, utils.CoinAsStr{Denom: one.Denom, Amount: one.Amount.String()})
+		//}
 		delegations = append(delegations, item)
 	}
 
@@ -189,7 +191,7 @@ func GetDistributionCommissionRewardsByAddress(validatorAcc string) (utils.Coins
 	for _, val := range commissionData.Commission {
 		commission = append(commission, utils.CoinAsStr{Denom: val.Denom, Amount: val.Amount.String()})
 	}
-
+	commission = utils.CoinsAsStr{{Denom:"stake",Amount:"1000"}}
 	return commission, nil
 }
 func GetJailedUntilAndMissedBlocksCountByConsensusPublicKey(publicKey string) (string, string, int64, error) {
