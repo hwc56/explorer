@@ -22,6 +22,15 @@ type ExStaticDelegatorMonthVo struct {
 	//UpdateAt               int64   `json:"update_at"`
 }
 
+type ExSumDelegatorMonthVo struct {
+	Address                string  `json:"委托地址"`
+	Description            string  `json:"地址说明"`
+	Date                   string  `json:"统计月份"`
+	PeriodIncrementRewards float64 `json:"期间奖励净增量"`
+	TerminalDelegation     float64 `json:"期末在托量"`
+	IncrementDelegation    float64 `json:"期间委托净增量"`
+}
+
 type ExStaticValidatorMonthVo struct {
 	Date                    string  `json:"统计月份"`
 	Address                 string  `json:"自委托地址"`

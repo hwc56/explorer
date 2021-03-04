@@ -13,6 +13,7 @@ import (
 	"github.com/irisnet/explorer/backend/vo"
 	"gopkg.in/mgo.v2/bson"
 	"math"
+	"strings"
 	"testing"
 	"time"
 )
@@ -187,6 +188,111 @@ func TestStaticDelegatorByMonthTask_Caculate(t *testing.T) {
 	t.Log(string(valbytedata))
 
 	//num, _ := task.getPeriodDelegationTimes(addr, txs)
+}
+
+func TestUniqueDelegatorByMonthTask_Caculate(t *testing.T) {
+	serv := new(service.CaculateService)
+
+	getDelegatorMonthData := func(caculateTime string) []vo.ExStaticDelegatorMonthVo {
+
+		cond := bson.M{
+			"date": caculateTime,
+		}
+
+		var delegatorMonthData []vo.ExStaticDelegatorMonthVo
+		page := 1
+		limit := 100
+		for {
+			res, _, err := serv.GetDelegatorCaculateMonth(cond, page, limit, false)
+			if err != nil {
+				t.Log(err.Error())
+				break
+			}
+			delegatorMonthData = append(delegatorMonthData, res...)
+			if len(res) < limit {
+				break
+			}
+			page++
+		}
+		return delegatorMonthData
+	}
+
+	getUniqMonthData := func(delegatorMonthData []vo.ExStaticDelegatorMonthVo) []vo.ExSumDelegatorMonthVo {
+		var (
+			result   []vo.ExSumDelegatorMonthVo
+			nameAddr = map[string]string{
+				"iaa1w7ewedr57z6p7f8nknmdvukfxwkwlsvfjumdts": "生态基金委托地址",
+				"iaa156lnmahxx53yxduxax7pu6rdf6dy44edejtnpk": "Bianjie 委托地址",
+				"iaa1p3ucd3ptpw902fluyjzhq3ffgq4ntddad8svnp": "Binance Pool 委托地址",
+				"iaa1nvx4c38jq4nq9c5na732hdvz4uqx2px7mtc6g9": "Hashquark 委托地址",
+				"iaa106j6vl59622cqus8hk5dlc5m3q0h3c5lneqycr": "Huobi Pool 委托地址",
+				"iaa1gu0mkhx3w76wz3v2pd0vscsm94zu3htgxej87k": "ICF",
+				"iaa16r4q4sfpyhuxk8lg3h3vc03j35knc3akjc05za": "Tendermint",
+			}
+		)
+		Name := "其他地址"
+		other := vo.ExSumDelegatorMonthVo{
+			Description:            Name,
+			Address:                "Other",
+			Date:                   "",
+			PeriodIncrementRewards: 0,
+			TerminalDelegation:     0,
+			IncrementDelegation:    0,
+		}
+		for _, val := range delegatorMonthData {
+			switch val.Date {
+			case "2020.05.30":
+				val.Date = "2020.06.01"
+			case "2020.08.31":
+				val.Date = "2020.09.01"
+			}
+			val.Date = string([]byte(val.Date)[:len(val.Date)-3])
+			val.Date = strings.ReplaceAll(val.Date, ".", "-")
+			desc, ok := nameAddr[val.Address]
+			if ok {
+				result = append(result, vo.ExSumDelegatorMonthVo{
+					Description:            desc,
+					Address:                val.Address,
+					Date:                   val.Date,
+					PeriodIncrementRewards: val.PeriodIncrementRewards,
+					TerminalDelegation:     val.TerminalDelegation,
+					IncrementDelegation:    val.IncrementDelegation,
+				})
+			} else {
+				if other.Date == "" {
+					other.Date = val.Date
+				}
+				other.IncrementDelegation += val.IncrementDelegation
+				other.TerminalDelegation += val.TerminalDelegation
+				other.PeriodIncrementRewards += val.PeriodIncrementRewards
+			}
+		}
+
+		result = append(result, other)
+
+		return result
+	}
+
+	var res []vo.ExSumDelegatorMonthVo
+	for _, val := range []string{
+		"2020.04.09",
+		"2020.05.01",
+		"2020.05.30",
+		"2020.07.01",
+		"2020.08.01",
+		"2020.08.31",
+		"2020.10.01",
+		"2020.11.01",
+		"2020.12.01",
+		"2021.01.01",
+	} {
+		data := getUniqMonthData(getDelegatorMonthData(val))
+		res = append(res, data...)
+	}
+
+	bytedata, _ := json.Marshal(res)
+	t.Log(string(bytedata))
+
 }
 
 func Test_parseCoinAmountAndUnitFromStr(t *testing.T) {
